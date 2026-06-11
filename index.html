@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Cellar Book">
+  <meta name="theme-color" content="#160D14">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <title>The Cellar Book</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garant:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --ink:         #160D14;
+      --ink-mid:     #1E1018;
+      --stone:       #4A4A5A;
+      --sage:        #1A3C28;
+      --sage-lt:     #2A5A3A;
+      --copper:      #C8954A;
+      --copper-lt:   #DBA860;
+      --parch:       #E8D5C4;
+      --parch-dim:   #C0AFA0;
+      --parch-faint: #7A6E63;
+      --red-wine:    #8B1A3A;
+      --danger:      #8B2020;
+      --panel-w:     440px;
+      --tx:          0.3s cubic-bezier(0.4,0,0.2,1);
+      --safe-top:    env(safe-area-inset-top, 0px);
+      --safe-bot:    env(safe-area-inset-bottom, 0px);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
+    body {
+      background: linear-gradient(135deg, #3D1535 0%, #231123 40%, #160D14 100%);
+      background-attachment: fixed;
+      color: var(--parch);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      min-height: 100%;
+      overflow-x: hidden;
+    }
+    #app { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+
+    /* ── HEADER ── */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: calc(14px + var(--safe-top)) 20px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: rgba(22,13,20,0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 100;
+      gap: 12px;
+    }
+    .brand { display: flex; align-items: baseline; gap: 8px; flex-shrink: 0; min-width: 0; }
+    .brand-title {
+      font-family: 'Cormorant Garant', serif;
+      font-size: clamp(1.3rem, 4vw, 1.75rem);
+      font-style: italic; font-weight: 300;
+      color: #F0E4D0; letter-spacing: 0.02em; line-height: 1;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .brand-mark {
+      font-family: 'Cormorant Garant', serif;
+      font-size: 0.7rem; color: var(--copper);
+      letter-spacing: 0.12em; text-transform: uppercase;
+      display: none;
+    }
+    @media (min-width: 500px) { .brand-mark { display: inline; } }
+
+    .header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .tab-bar {
+      display: flex; gap: 2px;
+      background: rgba(0,0,0,0.3); border-radius: 8px; padding: 3px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .tab-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--parch-faint);
+      font-family: 'Inter', sans-serif; font-size: 0.7rem; font-weight: 500;
+      letter-spacing: 0.07em; text-transform: uppercase;
+      padding: 6px 11px; border-radius: 6px; transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tab-btn.active { background: rgba(255,255,255,0.1); color: var(--parch); }
+    .btn-add {
+      background: var(--red-wine); color: #F0E4D0;
+      border: none; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 0.7rem; font-weight: 600;
+      letter-spacing: 0.07em; text-transform: uppercase;
+      padding: 8px 13px; border-radius: 6px; transition: background 0.2s;
+      white-space: nowrap; -webkit-tap-highlight-color: transparent;
+    }
+    .btn-add:active { background: #A82040; }
+
+    /* ── INSTALL BANNER ── */
+    #installBanner {
+      display: none;
+      align-items: center; justify-content: space-between;
+      padding: 10px 20px; gap: 12px;
+      background: rgba(26,60,40,0.6);
+      border-bottom: 1px solid rgba(26,60,40,0.8);
+      backdrop-filter: blur(8px);
+    }
+    #installBanner.show { display: flex; }
+    .install-text { font-size: 0.78rem; color: var(--parch-dim); }
+    .install-text strong { color: var(--parch); }
+    .btn-install {
+      background: var(--sage-lt); color: var(--parch);
+      border: none; cursor: pointer; padding: 7px 14px; border-radius: 6px;
+      font-family: 'Inter', sans-serif; font-size: 0.72rem; font-weight: 600;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .btn-dismiss { background: none; border: none; cursor: pointer; color: var(--parch-faint); font-size: 1.1rem; padding: 4px; }
+
+    /* ── MAIN ── */
+    main { flex: 1; padding: 20px; max-width: 1400px; width: 100%; margin: 0 auto; padding-bottom: calc(20px + var(--safe-bot)); }
+
+    /* ── STATS ── */
+    .stats-bar { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+    .stat-pill {
+      background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px; padding: 9px 14px;
+      display: flex; align-items: center; gap: 9px; flex-shrink: 0;
+    }
+    .stat-num { font-family: 'Cormorant Garant', serif; font-size: 1.5rem; font-weight: 600; color: var(--copper); line-height: 1; }
+    .stat-label { font-size: 0.65rem; color: var(--parch-faint); text-transform: uppercase; letter-spacing: 0.1em; line-height: 1.3; }
+
+    /* ── FILTER BAR ── */
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .filter-group { display: flex; align-items: center; gap: 5px; }
+    .filter-label { font-family: 'Cormorant Garant', serif; font-size: 0.82rem; font-style: italic; color: var(--parch-faint); white-space: nowrap; }
+    select.fs, input.fs {
+      background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px; color: var(--parch);
+      font-family: 'Inter', sans-serif; font-size: 0.75rem;
+      padding: 7px 9px; outline: none; transition: border-color 0.2s;
+      appearance: none; -webkit-appearance: none; cursor: pointer;
+    }
+    select.fs { padding-right: 24px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23C9BAA5' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 7px center; }
+    select.fs:focus, input.fs:focus { border-color: rgba(200,149,74,0.6); }
+    input.fs { min-width: 160px; flex: 1; }
+    input.fs::placeholder { color: var(--parch-faint); }
+    .ml-auto { margin-left: auto; }
+    .count-badge {
+      background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15);
+      color: var(--parch); border-radius: 6px; padding: 6px 12px;
+      font-size: 0.75rem; font-weight: 600; white-space: nowrap;
+    }
+
+    /* ── TABLE — desktop ── */
+    .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); }
+    table { width: 100%; border-collapse: collapse; min-width: 600px; }
+    thead th {
+      background: var(--sage);
+      font-family: 'Cormorant Garant', serif; font-size: 0.88rem; font-style: italic; font-weight: 600;
+      color: var(--copper); letter-spacing: 0.04em;
+      padding: 12px 13px; text-align: left;
+      border-bottom: 1px solid rgba(0,0,0,0.3);
+      white-space: nowrap; user-select: none;
+    }
+    tbody tr { border-bottom: 1px solid rgba(0,0,0,0.25); cursor: pointer; }
+    tbody tr:nth-child(odd)  td { background: rgba(0,0,0,0.35); }
+    tbody tr:nth-child(even) td { background: rgba(0,0,0,0.15); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover td { background: rgba(139,26,58,0.15) !important; }
+    tbody tr:active td { background: rgba(139,26,58,0.25) !important; }
+    tbody td { padding: 10px 13px; vertical-align: middle; color: var(--parch-dim); font-size: 0.8rem; }
+    .td-v { color: var(--parch) !important; font-weight: 700; }
+    .td-yr { font-family: 'Cormorant Garant', serif; font-size: 1rem; font-weight: 600; color: var(--parch) !important; }
+    .hide-sm { display: none; }
+    @media (min-width: 640px) { .hide-sm { display: table-cell; } }
+
+    /* ── CARD VIEW — mobile (< 640px) ── */
+    .card-list { display: flex; flex-direction: column; gap: 8px; }
+    .bottle-card {
+      background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px; padding: 13px 15px;
+      display: flex; align-items: center; gap: 12px;
+      cursor: pointer; transition: background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .bottle-card:active { background: rgba(139,26,58,0.2); }
+    .bc-left { display: flex; flex-direction: column; align-items: center; gap: 5px; flex-shrink: 0; }
+    .bc-body { flex: 1; min-width: 0; }
+    .bc-varietal { font-size: 0.9rem; font-weight: 700; color: var(--parch); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bc-producer { font-size: 0.75rem; color: var(--parch-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+    .bc-meta { font-size: 0.7rem; color: var(--parch-faint); margin-top: 3px; }
+    .bc-right { text-align: right; flex-shrink: 0; }
+    .bc-year { font-family: 'Cormorant Garant', serif; font-size: 1.3rem; font-weight: 600; color: var(--parch); line-height: 1; }
+    .bc-loc  { font-size: 0.65rem; color: var(--parch-faint); margin-top: 3px; }
+
+    /* ── QTY / TYPE / STATUS BADGES ── */
+    .qty-slot {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 6px;
+      font-size: 0.76rem; font-weight: 700; background: #4A4A5A; color: #E8D5C4;
+    }
+    .qty-slot.multi { background: #2A5A3A; }
+    .type-badge { display: inline-block; padding: 3px 8px; border-radius: 5px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em; }
+    .type-Red       { background: linear-gradient(135deg,#8B1A3A,#6B1030); color:#F0D0D8; }
+    .type-White     { background: linear-gradient(135deg,#7A6A20,#5A4A10); color:#F0E8B0; }
+    .type-Rose      { background: linear-gradient(135deg,#8B2A50,#6B1A38); color:#F0C0D0; }
+    .type-Sparkling { background: linear-gradient(135deg,#2A4A70,#1A3050); color:#B0C8F0; }
+    .type-Dessert   { background: linear-gradient(135deg,#7A5010,#5A3808); color:#F0D8A0; }
+    .type-Other     { background: linear-gradient(135deg,#4A3A5A,#32283A); color:#C8C0D8; }
+    .status-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 5px;
+      font-size: 0.64rem; font-weight: 600;
+      color: var(--parch-dim); background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.18);
+    }
+    .action-dots {
+      background: none; border: none; cursor: pointer;
+      color: var(--parch-faint); font-size: 1.2rem; padding: 4px 7px;
+      border-radius: 4px; -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state { text-align: center; padding: 60px 20px; }
+    .empty-state .ei { font-size: 3rem; margin-bottom: 14px; opacity: 0.3; }
+    .empty-state h3 { font-family: 'Cormorant Garant', serif; font-style: italic; font-size: 1.4rem; color: var(--parch-faint); margin-bottom: 7px; }
+    .empty-state p  { color: var(--parch-faint); font-size: 0.82rem; }
+
+    /* ── PANEL ── */
+    .p-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      z-index: 200; opacity: 0; pointer-events: none; transition: opacity var(--tx);
+    }
+    .p-overlay.open { opacity: 1; pointer-events: all; }
+    .side-panel {
+      position: fixed; top: 0; right: 0; bottom: 0;
+      width: min(var(--panel-w), 100vw);
+      background: #1A0E18; border-left: 1px solid rgba(255,255,255,0.1);
+      z-index: 201; transform: translateX(100%); transition: transform var(--tx);
+      overflow-y: auto; display: flex; flex-direction: column;
+      padding-bottom: var(--safe-bot);
+    }
+    .side-panel.open { transform: translateX(0); }
+    .p-head {
+      padding: calc(18px + var(--safe-top)) 22px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex; align-items: flex-start; justify-content: space-between;
+      flex-shrink: 0; background: rgba(0,0,0,0.2);
+      position: sticky; top: 0; z-index: 1;
+    }
+    .p-title { font-family: 'Cormorant Garant', serif; font-size: 1.3rem; font-style: italic; font-weight: 300; color: var(--parch); }
+    .p-sub   { font-size: 0.68rem; color: var(--parch-faint); margin-top: 3px; }
+    .btn-x { background: none; border: none; cursor: pointer; color: var(--parch-faint); font-size: 1.2rem; padding: 4px; border-radius: 4px; line-height: 1; -webkit-tap-highlight-color: transparent; }
+    .p-body { padding: 18px 22px; flex: 1; }
+    .p-foot { padding: 13px 22px; border-top: 1px solid rgba(255,255,255,0.07); display: flex; gap: 9px; flex-shrink: 0; }
+
+    /* ── FORM ── */
+    .f-section { margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .f-section:last-of-type { border-bottom: none; margin-bottom: 0; }
+    .f-sec-label { font-family: 'Cormorant Garant', serif; font-size: 0.74rem; font-style: italic; color: var(--copper); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 11px; display: block; }
+    .f-row { display: flex; gap: 10px; margin-bottom: 10px; }
+    .f-col { flex: 1; min-width: 0; }
+    .f-col.x2 { flex: 2; }
+    label.fl { display: block; font-size: 0.67rem; color: var(--parch-faint); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    input.fi, select.fi, textarea.fi {
+      width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px; color: var(--parch);
+      font-family: 'Inter', sans-serif; font-size: 16px; /* 16px prevents iOS zoom */
+      padding: 10px 11px; outline: none;
+      transition: border-color 0.2s; appearance: none; -webkit-appearance: none;
+    }
+    select.fi { padding-right: 26px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23C9BAA5' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; }
+    input.fi:focus, select.fi:focus, textarea.fi:focus { border-color: rgba(200,149,74,0.7); background: rgba(0,0,0,0.55); }
+    input.fi::placeholder { color: var(--parch-faint); }
+    textarea.fi { resize: vertical; min-height: 72px; }
+    .f-hint { font-size: 0.62rem; color: var(--parch-faint); margin-top: 3px; font-style: italic; }
+    .geo-box { background: rgba(26,60,40,0.2); border: 1px solid rgba(26,60,40,0.55); border-radius: 6px; padding: 10px 12px; margin-bottom: 10px; }
+    .geo-box p { font-size: 0.69rem; color: var(--parch-faint); line-height: 1.5; margin-bottom: 3px; }
+    .geo-box p:last-child { margin-bottom: 0; }
+    .geo-box strong { color: var(--copper); font-weight: 500; }
+
+    /* ── BUTTONS ── */
+    .btn-p {
+      flex: 1; background: var(--red-wine); color: #F0E4D0; border: none; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 0.78rem; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 12px; border-radius: 8px; transition: background 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-p:active { background: #A82040; }
+    .btn-s {
+      background: rgba(255,255,255,0.07); color: var(--parch-dim);
+      border: 1px solid rgba(255,255,255,0.1); cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 0.78rem; font-weight: 500;
+      padding: 12px 15px; border-radius: 8px; transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-s:active { background: rgba(255,255,255,0.12); }
+    .btn-d {
+      background: none; color: var(--danger);
+      border: 1px solid rgba(139,32,32,0.4); cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 0.72rem; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 12px 13px; border-radius: 8px;
+    }
+
+    /* ── DETAIL ── */
+    .d-hero { text-align: center; padding: 4px 0 16px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 16px; }
+    .d-year { font-family: 'Cormorant Garant', serif; font-size: 3rem; font-weight: 300; color: var(--parch); line-height: 1; margin-bottom: 4px; }
+    .d-var  { font-family: 'Cormorant Garant', serif; font-size: 1.4rem; font-style: italic; color: var(--parch); margin-bottom: 2px; }
+    .d-prod { font-size: 0.82rem; color: var(--parch-faint); }
+    .d-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 14px; }
+    .d-cell { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.07); border-radius: 7px; padding: 9px 11px; }
+    .d-cell.full { grid-column: 1/-1; }
+    .d-cl { font-size: 0.6rem; color: var(--parch-faint); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 3px; }
+    .d-cv { font-size: 0.87rem; color: var(--parch); font-weight: 500; }
+    .d-acts { display: flex; gap: 7px; margin-top: 6px; }
+    .d-act {
+      flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      color: var(--parch-dim); cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 0.69rem; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 11px 6px; border-radius: 7px; text-align: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .d-act:active { background: rgba(255,255,255,0.12); color: var(--parch); }
+    .a-confirm { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px; margin-top: 14px; }
+    .a-confirm h4 { font-family: 'Cormorant Garant', serif; font-size: 0.95rem; font-style: italic; color: var(--parch); margin-bottom: 11px; }
+
+    /* ── HISTORY TAB ── */
+    .io-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 10px 0; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .io-lbl { font-size: 0.67rem; color: var(--parch-faint); text-transform: uppercase; letter-spacing: 0.08em; }
+    .btn-io {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      color: var(--parch-faint); cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 0.7rem; font-weight: 500;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 8px 13px; border-radius: 6px; transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-io:active { background: rgba(255,255,255,0.1); color: var(--parch); }
+    .h-entry { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .h-entry:last-child { border-bottom: none; }
+    .h-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+    .dc{background:#2A5A3A;}.dg{background:#2A4A70;}.ds{background:var(--copper);}.dd{background:var(--danger);}
+    .h-body { flex: 1; min-width: 0; }
+    .h-wine { font-size: 0.82rem; color: var(--parch); font-weight: 500; }
+    .h-meta { font-size: 0.69rem; color: var(--parch-faint); margin-top: 2px; }
+    .h-note { font-size: 0.75rem; color: var(--parch-dim); font-style: italic; margin-top: 3px; }
+    .h-date { font-size: 0.67rem; color: var(--parch-faint); flex-shrink: 0; margin-top: 3px; white-space: nowrap; }
+
+    /* ── SYNC HELPER (iOS/Android share tip) ── */
+    .sync-tip {
+      background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px; padding: 13px 15px; margin-bottom: 16px;
+    }
+    .sync-tip h4 { font-family: 'Cormorant Garant', serif; font-size: 1rem; font-style: italic; color: var(--copper); margin-bottom: 7px; }
+    .sync-tip ol { padding-left: 18px; }
+    .sync-tip li { font-size: 0.76rem; color: var(--parch-dim); line-height: 1.6; }
+    .sync-tip li strong { color: var(--parch); }
+
+    /* ── CONTEXT MENU ── */
+    .ctx {
+      position: fixed; background: #1A0E18;
+      border: 1px solid rgba(255,255,255,0.14); border-radius: 10px; padding: 5px;
+      z-index: 300; box-shadow: 0 8px 32px rgba(0,0,0,0.7); min-width: 170px; display: none;
+    }
+    .ctx.open { display: block; }
+    .ctx-i {
+      display: block; width: 100%; background: none; border: none; cursor: pointer;
+      color: var(--parch-dim); font-family: 'Inter', sans-serif; font-size: 0.82rem;
+      padding: 10px 13px; border-radius: 7px; text-align: left;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ctx-i:active { background: rgba(255,255,255,0.08); color: var(--parch); }
+    .ctx-i.danger { color: #E07070; }
+    .ctx-div { height: 1px; background: rgba(255,255,255,0.07); margin: 3px 0; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: calc(22px + var(--safe-bot)); left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: #1A0E18; border: 1px solid rgba(181,118,42,0.3);
+      color: var(--parch); padding: 10px 20px; border-radius: 8px;
+      font-size: 0.8rem; z-index: 400; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s, transform 0.3s; white-space: nowrap;
+      max-width: calc(100vw - 40px); text-align: center;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">
+      <span class="brand-title" id="brandTitle">The Cellar Book</span>
+      <span class="brand-mark">Private Reserve</span>
+    </div>
+    <div class="header-right">
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tab-cellar"  onclick="switchTab('cellar')">Cellar</button>
+        <button class="tab-btn"        id="tab-history" onclick="switchTab('history')">Log</button>
+      </div>
+      <button class="btn-add" onclick="openAddPanel()">+ Add</button>
+    </div>
+  </header>
+
+  <!-- Install prompt banner (Android Chrome) -->
+  <div id="installBanner">
+    <div class="install-text"><strong>Install The Cellar Book</strong> — add to your home screen for offline use</div>
+    <button class="btn-install" id="installBtn">Install</button>
+    <button class="btn-dismiss" onclick="dismissInstall()">✕</button>
+  </div>
+
+  <main>
+    <!-- CELLAR TAB -->
+    <div id="view-cellar">
+      <div class="stats-bar" id="statsBar"></div>
+
+      <div class="filter-bar">
+        <input id="searchInput" class="fs" style="min-width:130px;flex:1" placeholder="Search…" oninput="renderCellar()">
+        <select id="typeFilter" class="fs" onchange="renderCellar()">
+          <option value="">All Types</option>
+          <option>Red</option><option>White</option><option>Rosé</option>
+          <option>Sparkling</option><option>Dessert</option><option>Other</option>
+        </select>
+        <select id="prodFilter" class="fs" onchange="renderCellar()"><option value="">All Producers</option></select>
+        <select id="sortSelect" class="fs" onchange="renderCellar()">
+          <option value="date">Date Added</option>
+          <option value="vintage">Vintage</option>
+          <option value="typeVarietal">Type → Varietal</option>
+          <option value="producer">Producer</option>
+        </select>
+        <div class="ml-auto"><span class="count-badge" id="countBadge">0 bottles</span></div>
+      </div>
+
+      <!-- Desktop table (hidden on mobile) -->
+      <div class="table-wrap" id="tableView">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:46px">Qty</th>
+              <th class="hide-sm">Type</th>
+              <th>Varietal</th>
+              <th>Producer</th>
+              <th class="hide-sm">Country / Region</th>
+              <th class="hide-sm">Appellation / AVA</th>
+              <th>Vintage</th>
+              <th class="hide-sm">Location</th>
+              <th class="hide-sm">Status</th>
+              <th style="width:38px"></th>
+            </tr>
+          </thead>
+          <tbody id="cellarBody">
+            <tr><td colspan="10"><div class="empty-state"><div class="ei">🍷</div><h3>Loading…</h3></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile card list -->
+      <div class="card-list" id="cardView" style="display:none"></div>
+    </div>
+
+    <!-- HISTORY / LOG TAB -->
+    <div id="view-history" style="display:none">
+      <div class="io-bar">
+        <span class="io-lbl">Sync & Backup</span>
+        <button class="btn-io" onclick="doExport()">⬇ Export JSON</button>
+        <button class="btn-io" onclick="doImport()">⬆ Import JSON</button>
+        <button class="btn-io" onclick="doExportCSV()">⬇ CSV</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+      </div>
+
+      <div class="sync-tip">
+        <h4>Syncing Between Devices</h4>
+        <ol>
+          <li>On the device with the latest data, tap <strong>Export JSON</strong></li>
+          <li>Save it to <strong>iCloud Drive</strong> (iOS) or <strong>Google Drive</strong> (Android) — or AirDrop it</li>
+          <li>On the other device, tap <strong>Import JSON</strong> and select that file</li>
+          <li>Done — your cellar is now in sync</li>
+        </ol>
+      </div>
+
+      <div id="historyList"></div>
+    </div>
+  </main>
+</div>
+
+<!-- OVERLAY + SLIDE PANEL -->
+<div class="p-overlay" id="pOverlay" onclick="closePanel()"></div>
+<div class="side-panel" id="sidePanel">
+  <div class="p-head">
+    <div>
+      <div class="p-title" id="pTitle"></div>
+      <div class="p-sub"   id="pSub"></div>
+    </div>
+    <button class="btn-x" onclick="closePanel()">✕</button>
+  </div>
+  <div class="p-body" id="pBody"></div>
+  <div class="p-foot" id="pFoot"></div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div class="ctx" id="ctxMenu"></div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+// ── INDEXEDDB ─────────────────────────────────────────────────────────────────
+const DB_NAME = 'CellarBook', DB_VER = 1, STORE = 'cellar';
+let idb;
+
+function openIDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(STORE);
+    req.onsuccess = e => { idb = e.target.result; res(idb); };
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+function idbGet(key) {
+  return new Promise((res, rej) => {
+    const tx = idb.transaction(STORE, 'readonly');
+    const req = tx.objectStore(STORE).get(key);
+    req.onsuccess = () => res(req.result);
+    req.onerror   = () => rej(req.error);
+  });
+}
+function idbSet(key, val) {
+  return new Promise((res, rej) => {
+    const tx  = idb.transaction(STORE, 'readwrite');
+    const req = tx.objectStore(STORE).put(val, key);
+    req.onsuccess = () => res();
+    req.onerror   = () => rej(req.error);
+  });
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let DB = { bottles: [], history: [] };
+let activeKey = null;
+let isMobile  = false;
+
+// ── SEED DATA ─────────────────────────────────────────────────────────────────
+const SEED = {"bottles":[{"id":1,"status":"In Cellar","type":"Red","varietal":"Old Vine Zinfandel","producer":"St. Francis","vintage":"2021","region":"","appellation":"","location":"Rack A-20","dateAdded":"2026-04-16","purchasePrice":null},{"id":8,"status":"Consumed","type":"Red","varietal":"Tannat","producer":"Allegretto","vintage":"2017","region":"Paso Robles","appellation":"","location":"","dateAdded":"2019-04-29","purchasePrice":null,"actionDate":"2026-04-19","notes":"Mark Freeman in town"},{"id":9,"status":"Consumed","type":"Red","varietal":"Cabernet Sauvignon","producer":"Allegretto","vintage":"2017","region":"Paso Robles","appellation":"","location":"","dateAdded":"2019-04-29","purchasePrice":null,"actionDate":"2026-04-19","notes":"Mark Freeman in Town"},{"id":10,"status":"Consumed","type":"Red","varietal":"Pinot Noir","producer":"Chateau St Jean","vintage":"2018","region":"Sonoma County","appellation":"Sonoma Valley","location":"","dateAdded":"2020-04-29","purchasePrice":null,"actionDate":"2026-04-19","notes":"Mark Freeman in town"},{"id":11,"status":"In Cellar","type":"Red","varietal":"Zinfandel","producer":"Caymus","vintage":"2020","region":"Napa Valley","appellation":"","location":"D0","dateAdded":"2023-04-29","purchasePrice":null},{"id":12,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"Caymus","vintage":"2020","region":"Napa Valley","appellation":"","location":"D0","dateAdded":"2023-04-29","purchasePrice":null},{"id":16,"status":"In Cellar","type":"Red","varietal":"Mayote","producer":"DAOU","vintage":"2020","region":"Paso Robles","appellation":"Adelaida District","location":"D0","dateAdded":"","purchasePrice":null},{"id":17,"status":"In Cellar","type":"Red","varietal":"Eye Of The Falcon","producer":"DAOU Reserve","vintage":"2020","region":"Paso Robles","appellation":"","location":"D0","dateAdded":"","purchasePrice":null},{"id":18,"status":"In Cellar","type":"Red","varietal":"Eye Of The Falcon","producer":"DAOU Reserve","vintage":"2020","region":"Paso Robles","appellation":"","location":"D0","dateAdded":"","purchasePrice":null},{"id":19,"status":"In Cellar","type":"Red","varietal":"Eye Of The Falcon","producer":"DAOU Reserve","vintage":"2021","region":"Paso Robles","appellation":"","location":"D0","dateAdded":"","purchasePrice":null},{"id":20,"status":"In Cellar","type":"Red","varietal":"Eye Of The Falcon","producer":"DAOU Reserve","vintage":"2019","region":"Paso Robles","appellation":"","location":"D0","dateAdded":"","purchasePrice":null},{"id":21,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"DAOU","vintage":"2021","region":"Paso Robles","appellation":"","location":"D0","dateAdded":"","purchasePrice":null},{"id":22,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"DAOU Reserve","vintage":"2020","region":"Paso Robles","appellation":"","location":"D0","dateAdded":"","purchasePrice":null},{"id":23,"status":"In Cellar","type":"Red","varietal":"Cuvee Lizzy","producer":"DAOU","vintage":"2021","region":"Paso Robles","appellation":"","location":"D0","dateAdded":"","purchasePrice":null},{"id":24,"status":"In Cellar","type":"Red","varietal":"Cuvee Lizzy","producer":"DAOU","vintage":"2021","region":"Paso Robles","appellation":"","location":"","dateAdded":"","purchasePrice":null},{"id":25,"status":"In Cellar","type":"Red","varietal":"1740","producer":"DAOU Reserve","vintage":"2021","region":"Paso Robles","appellation":"","location":"D0","dateAdded":"","purchasePrice":null},{"id":26,"status":"In Cellar","type":"Red","varietal":"Unbound","producer":"DAOU Reserve","vintage":"2021","region":"Paso Robles","appellation":"","location":"D0","dateAdded":"","purchasePrice":null},{"id":27,"status":"In Cellar","type":"Red","varietal":"Unbound","producer":"DAOU Reserve","vintage":"2020","region":"Paso Robles","appellation":"","location":"D0","dateAdded":"","purchasePrice":null},{"id":28,"status":"In Cellar","type":"Red","varietal":"Unbound","producer":"DAOU Reserve","vintage":"2020","region":"Paso Robles","appellation":"","location":"D0","dateAdded":"","purchasePrice":null},{"id":29,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon - Soul Of A Lion","producer":"DAOU","vintage":"2020","region":"Paso Robles","appellation":"Adelaida District","location":"D0","dateAdded":"","purchasePrice":null},{"id":30,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"Allegretto - Ayres Family Reserve","vintage":"2018","region":"Paso Robles","appellation":"","location":"Black Crate","dateAdded":"","purchasePrice":null},{"id":31,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"Beringer - Single Vineyard","vintage":"2018","region":"Napa Valley","appellation":"St Helena","location":"Black Crate","dateAdded":"","purchasePrice":null},{"id":32,"status":"In Cellar","type":"Red","varietal":"Blend","producer":"Winston Hill","vintage":"2018","region":"Napa Valley","appellation":"Rutherford","location":"Black Crate","dateAdded":"","purchasePrice":null},{"id":33,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"Cherry Block","vintage":"2017","region":"Sonoma Valley","appellation":"Sonoma County","location":"Black Crate","dateAdded":"","purchasePrice":null},{"id":34,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"Chapi - Estate Grand Reserve","vintage":"2021","region":"Temecula Valley","appellation":"","location":"Black Crate","dateAdded":"","purchasePrice":null},{"id":35,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"Bella Union","vintage":"2018","region":"Napa Valley","appellation":"Rutherford","location":"Black Crate","dateAdded":"","purchasePrice":null},{"id":36,"status":"In Cellar","type":"Red","varietal":"Blend - Pentimiento","producer":"Le Cuvier","vintage":"2019","region":"Paso Robles","appellation":"","location":"A1","dateAdded":"","purchasePrice":null},{"id":37,"status":"In Cellar","type":"Red","varietal":"Blend - Pentimiento","producer":"Le Cuvier","vintage":"2020","region":"Paso Robles","appellation":"","location":"A2","dateAdded":"","purchasePrice":null},{"id":38,"status":"In Cellar","type":"Red","varietal":"Blend - Pentimiento","producer":"Le Cuvier","vintage":"2021","region":"Paso Robles","appellation":"","location":"A3","dateAdded":"","purchasePrice":null},{"id":39,"status":"In Cellar","type":"Red","varietal":"Blend - Pentimiento","producer":"Le Cuvier","vintage":"2022","region":"Paso Robles","appellation":"","location":"A4","dateAdded":"","purchasePrice":null},{"id":40,"status":"In Cellar","type":"Red","varietal":"Blend - Pentimiento","producer":"Le Cuvier","vintage":"2023","region":"Paso Robles","appellation":"","location":"A5","dateAdded":"","purchasePrice":null},{"id":41,"status":"In Cellar","type":"Red","varietal":"Blend - Pentimiento","producer":"Le Cuvier","vintage":"2024","region":"Paso Robles","appellation":"","location":"A6","dateAdded":"","purchasePrice":null},{"id":42,"status":"In Cellar","type":"Red","varietal":"Blend - Red Bat Cuvée","producer":"Le Cuvier","vintage":"2019","region":"Paso Robles","appellation":"","location":"A7","dateAdded":"","purchasePrice":null},{"id":43,"status":"In Cellar","type":"Red","varietal":"Blend - Red Bat Cuvée","producer":"Le Cuvier","vintage":"2019","region":"Paso Robles","appellation":"","location":"A8","dateAdded":"","purchasePrice":null},{"id":44,"status":"In Cellar","type":"Red","varietal":"Cuvée Blend - Littoral","producer":"Le Cuvier","vintage":"2021","region":"Paso Robles","appellation":"","location":"A9","dateAdded":"","purchasePrice":null},{"id":45,"status":"In Cellar","type":"Red","varietal":"Zinfandel","producer":"Le Cuvier","vintage":"2021","region":"Paso Robles","appellation":"","location":"A10","dateAdded":"","purchasePrice":null},{"id":46,"status":"In Cellar","type":"Red","varietal":"Malbec","producer":"Pine Ridge","vintage":"2022","region":"Napa Valley","appellation":"","location":"A11","dateAdded":"","purchasePrice":null},{"id":47,"status":"In Cellar","type":"Red","varietal":"Petit Verdot","producer":"Pine Ridge","vintage":"2022","region":"Napa Valley","appellation":"","location":"A12","dateAdded":"","purchasePrice":null},{"id":48,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"Pine Ridge","vintage":"2022","region":"Napa Valley","appellation":"Stags Leap District","location":"A13","dateAdded":"","purchasePrice":null},{"id":49,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"Pine Ridge","vintage":"2022","region":"Napa Valley","appellation":"Oakville","location":"A14","dateAdded":"","purchasePrice":null},{"id":50,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"Pine Ridge","vintage":"2022","region":"Napa Valley","appellation":"Atlas Peak","location":"A15","dateAdded":"","purchasePrice":null},{"id":51,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"Pine Ridge","vintage":"2022","region":"Napa Valley","appellation":"Howell Mountain","location":"A16","dateAdded":"","purchasePrice":null},{"id":52,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"Pine Ridge","vintage":"2023","region":"Napa Valley","appellation":"Oakville","location":"A17","dateAdded":"","purchasePrice":null},{"id":53,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"St Francis","vintage":"2018","region":"Napa Valley","appellation":"Rockpile","location":"Black Crate","dateAdded":"","purchasePrice":null},{"id":54,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"St Francis","vintage":"2017","region":"Napa Valley","appellation":"Rockpile","location":"Black Crate","dateAdded":"","purchasePrice":null},{"id":55,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"Pine Ridge","vintage":"2023","region":"Napa Valley","appellation":"Howell Mountain","location":"A18","dateAdded":"","purchasePrice":null},{"id":56,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"Pine Ridge - Andrus Estate","vintage":"2023","region":"Napa Valley","appellation":"Stags Leap","location":"A19","dateAdded":"","purchasePrice":null},{"id":57,"status":"In Cellar","type":"Red","varietal":"Petit Verdot","producer":"Pine Ridge - Explorer Series","vintage":"2023","region":"Napa Valley","appellation":"","location":"A20","dateAdded":"","purchasePrice":null},{"id":58,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"St Francis","vintage":"2019","region":"Sonoma County","appellation":"Rockpile","location":"C1","dateAdded":"","purchasePrice":null},{"id":59,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"St Francis - Lagomarsino Vineyard","vintage":"2019","region":"Sonoma County","appellation":"Russian River Valley","location":"C2","dateAdded":"","purchasePrice":null},{"id":60,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"St Francis - Lagomarsino Vineyard","vintage":"2019","region":"Sonoma County","appellation":"Russian River Valley","location":"C3","dateAdded":"","purchasePrice":null},{"id":61,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"St Francis","vintage":"2019","region":"Sonoma County","appellation":"Moon Mountain District","location":"C4","dateAdded":"","purchasePrice":null},{"id":62,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"St Francis - Lagomarsino Vineyard","vintage":"2020","region":"Sonoma Valley","appellation":"Russian River Valley","location":"C5","dateAdded":"","purchasePrice":null},{"id":63,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"St Francis","vintage":"2020","region":"Sonoma County","appellation":"Moon Mountain District","location":"C6","dateAdded":"","purchasePrice":null},{"id":64,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"St Francis","vintage":"2020","region":"Sonoma County","appellation":"Moon Mountain District","location":"C7","dateAdded":"","purchasePrice":null},{"id":65,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"St Francis","vintage":"2021","region":"Sonoma County","appellation":"Rockpile","location":"C8","dateAdded":"","purchasePrice":null},{"id":66,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"St Francis","vintage":"2021","region":"Sonoma County","appellation":"Moon Mountain District","location":"C9","dateAdded":"","purchasePrice":null},{"id":67,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"St Francis","vintage":"2021","region":"Sonoma County","appellation":"Moon Mountain District","location":"C10","dateAdded":"","purchasePrice":null},{"id":68,"status":"Gifted","type":"Red","varietal":"Blend","producer":"Rapp Ranch - Cutters Reserve","vintage":"2019","region":"Napa Valley","appellation":"","location":"D1","dateAdded":"","purchasePrice":null,"actionDate":"2026-06-05","notes":"Eric Edwards/Its a yacht bitch!"},{"id":69,"status":"Gifted","type":"Red","varietal":"Blend","producer":"Rapp Ranch - Cutters Reserve","vintage":"2019","region":"Napa Valley","appellation":"","location":"D2","dateAdded":"","purchasePrice":null,"actionDate":"2026-06-05","notes":"Eric Edwards / it\u2019s a yacht, bitch!"},{"id":70,"status":"In Cellar","type":"Red","varietal":"Blend","producer":"Rapp Ranch - Cutters Reserve","vintage":"2019","region":"Napa Valley","appellation":"","location":"D3","dateAdded":"","purchasePrice":null},{"id":71,"status":"In Cellar","type":"Red","varietal":"Blend","producer":"Rapp Ranch - Cutters Reserve","vintage":"2020","region":"Napa Valley","appellation":"","location":"D4","dateAdded":"","purchasePrice":null},{"id":72,"status":"In Cellar","type":"Red","varietal":"Blend","producer":"Rapp Ranch - Cutters Reserve","vintage":"2020","region":"Napa Valley","appellation":"","location":"D5","dateAdded":"","purchasePrice":null},{"id":73,"status":"In Cellar","type":"Red","varietal":"Blend","producer":"Rapp Ranch - Cutters Reserve","vintage":"2021","region":"Napa Valley","appellation":"","location":"D6","dateAdded":"","purchasePrice":null},{"id":74,"status":"In Cellar","type":"Red","varietal":"Blend","producer":"Rapp Ranch - Cutters Reserve","vintage":"2021","region":"Napa Valley","appellation":"","location":"D7","dateAdded":"","purchasePrice":null},{"id":75,"status":"In Cellar","type":"Red","varietal":"Blend","producer":"Rapp Ranch - Cutters Reserve","vintage":"2021","region":"Napa Valley","appellation":"","location":"D8","dateAdded":"","purchasePrice":null},{"id":76,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"Rapp Ranch","vintage":"2020","region":"Napa Valley","appellation":"","location":"D9","dateAdded":"","purchasePrice":null},{"id":77,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"Rapp Ranch","vintage":"2020","region":"Napa Valley","appellation":"","location":"D10","dateAdded":"","purchasePrice":null},{"id":78,"status":"In Cellar","type":"Red","varietal":"Pinot Noir","producer":"Domaine Carneros - The Famous Gate","vintage":"2020","region":"Napa County","appellation":"Carneros","location":"E1","dateAdded":"","purchasePrice":null},{"id":79,"status":"In Cellar","type":"Red","varietal":"Pinot Noir","producer":"Domaine Carneros - The Famous Gate","vintage":"2020","region":"Napa County","appellation":"Carneros","location":"E2","dateAdded":"","purchasePrice":null},{"id":80,"status":"In Cellar","type":"Red","varietal":"Pinot Noir","producer":"Domaine Carneros - The Famous Gate","vintage":"2021","region":"Napa County","appellation":"Carneros","location":"E3","dateAdded":"","purchasePrice":null},{"id":81,"status":"In Cellar","type":"Red","varietal":"Pinot Noir","producer":"Domaine Carneros - The Famous Gate","vintage":"2021","region":"Napa County","appellation":"Carneros","location":"E4","dateAdded":"","purchasePrice":null},{"id":82,"status":"In Cellar","type":"Red","varietal":"Pinot Noir","producer":"Domaine Carneros - The Famous Gate","vintage":"2021","region":"Napa County","appellation":"Carneros","location":"E5","dateAdded":"","purchasePrice":null},{"id":83,"status":"In Cellar","type":"Red","varietal":"Pinot Noir","producer":"Domaine Carneros - The Famous Gate","vintage":"2021","region":"Napa County","appellation":"Carneros","location":"E6","dateAdded":"","purchasePrice":null},{"id":84,"status":"In Cellar","type":"Red","varietal":"Pinot Noir","producer":"Domaine Carneros - The Famous Gate","vintage":"2022","region":"Napa County","appellation":"Carneros","location":"E7","dateAdded":"","purchasePrice":null},{"id":85,"status":"In Cellar","type":"Red","varietal":"Pinot Noir","producer":"Domaine Carneros - The Famous Gate","vintage":"2022","region":"Napa County","appellation":"Carneros","location":"E8","dateAdded":"","purchasePrice":null},{"id":86,"status":"In Cellar","type":"Red","varietal":"Pinot Noir","producer":"Domaine Carneros - Le Ciel Serein","vintage":"2022","region":"Napa County","appellation":"Carneros","location":"E9","dateAdded":"","purchasePrice":null},{"id":87,"status":"In Cellar","type":"Red","varietal":"Pinot Noir","producer":"Domaine Carneros - Swan Selection","vintage":"2023","region":"Napa County","appellation":"Carneros","location":"E10","dateAdded":"","purchasePrice":null},{"id":88,"status":"In Cellar","type":"Red","varietal":"Syrah","producer":"Boutz Cellars - Minotaur","vintage":"2023","region":"Paso Robles","appellation":"","location":"PR2026","dateAdded":"2026-05-30","purchasePrice":null},{"id":89,"status":"In Cellar","type":"Red","varietal":"Syrah","producer":"Boutz Cellars - Minotaur","vintage":"2023","region":"Paso Robles","appellation":"","location":"PR2026","dateAdded":"2026-05-30","purchasePrice":null},{"id":90,"status":"In Cellar","type":"Red","varietal":"Mourvedre","producer":"Boutz Cellars - Dasos","vintage":"2021","region":"Paso Robles","appellation":"","location":"PR2026","dateAdded":"2026-05-30","purchasePrice":null},{"id":91,"status":"In Cellar","type":"White","varietal":"Assyrtiko","producer":"Boutz Cellars","vintage":"2025","region":"Paso Robles","appellation":"Adelaida","location":"PR2026","dateAdded":"2026-05-30","purchasePrice":null},{"id":92,"status":"In Cellar","type":"Red","varietal":"Pinot Noir","producer":"DAOU Reserve","vintage":"2023","region":"Paso Robles","appellation":"","location":"RF-8","dateAdded":"2026-05-31","purchasePrice":null},{"id":93,"status":"In Cellar","type":"Red","varietal":"Pinot Noir","producer":"DAOU Reserve","vintage":"2023","region":"Paso Robles","appellation":"","location":"RF-8","dateAdded":"2026-05-31","purchasePrice":null},{"id":94,"status":"In Cellar","type":"White","varietal":"Sauvignon Blanc","producer":"DAOU","vintage":"2025","region":"Paso Robles","appellation":"Adelaida","location":"LF-8","dateAdded":"2026-05-31","purchasePrice":null},{"id":95,"status":"In Cellar","type":"White","varietal":"Sauvignon Blanc","producer":"DAOU","vintage":"2025","region":"Paso Robles","appellation":"Adelaida","location":"LF-8","dateAdded":"2026-05-31","purchasePrice":null},{"id":96,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"St Francis - Artisan Collection","vintage":"2018","region":"Sonoma County","appellation":"","location":"RF-13","dateAdded":"2026-05-27","purchasePrice":null},{"id":97,"status":"In Cellar","type":"White","varietal":"Riesling - Potter Valley","producer":"Chateau Montelena","vintage":"2024","region":"Napa Valley","appellation":"Calistoga","location":"NA","dateAdded":"2026-05-29","purchasePrice":null},{"id":98,"status":"In Cellar","type":"White","varietal":"Chardonnay","producer":"Chateau Montelena","vintage":"2023","region":"Napa Valley","appellation":"Calistoga","location":"NA","dateAdded":"2026-05-29","purchasePrice":null},{"id":99,"status":"In Cellar","type":"White","varietal":"Chardonnay","producer":"Chateau Montelena","vintage":"2023","region":"Napa Valley","appellation":"Calistoga","location":"NA","dateAdded":"2026-05-29","purchasePrice":null},{"id":100,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"Chateau Montelena","vintage":"2023","region":"Napa Valley","appellation":"Calistoga","location":"NA","dateAdded":"2026-05-29","purchasePrice":null},{"id":101,"status":"In Cellar","type":"White","varietal":"Sauvignon Blanc","producer":"Chateau Montelena","vintage":"2024","region":"Napa Valley","appellation":"Calistoga","location":"NA","dateAdded":"2026-05-29","purchasePrice":null},{"id":102,"status":"In Cellar","type":"Red","varietal":"Zinfandel","producer":"Chateau Montelena","vintage":"2023","region":"Napa Valley","appellation":"Calistoga","location":"NA","dateAdded":"2026-05-29","purchasePrice":null},{"id":103,"status":"In Cellar","type":"Red","varietal":"Zinfandel","producer":"Chateau Montelena","vintage":"2023","region":"Napa Valley","appellation":"Calistoga","location":"NA","dateAdded":"2026-05-29","purchasePrice":null},{"id":104,"status":"In Cellar","type":"Red","varietal":"Zinfandel","producer":"Chateau Montelena","vintage":"2023","region":"Napa Valley","appellation":"Calistoga","location":"NA","dateAdded":"2026-05-29","purchasePrice":null},{"id":105,"status":"In Cellar","type":"Red","varietal":"Zinfandel","producer":"Chateau Montelena","vintage":"2023","region":"Napa Valley","appellation":"Calistoga","location":"NA","dateAdded":"2026-05-29","purchasePrice":null},{"id":106,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"Pine Ridge- Howell Mountain","vintage":"2023","region":"Napa Valley","appellation":"","location":"NA","dateAdded":"2026-05-27","purchasePrice":null},{"id":107,"status":"In Cellar","type":"Red","varietal":"Cabernet Sauvignon","producer":"Pine Ridge - Circle Hill","vintage":"2023","region":"Napa Valley","appellation":"","location":"NA","dateAdded":"2026-05-27","purchasePrice":null},{"id":108,"status":"In Cellar","type":"Red","varietal":"Pinot Noir","producer":"St Francis - Rio Este Vineyard","vintage":"2023","region":"Sonoma County","appellation":"Russian River Valley","location":"NA","dateAdded":"2026-05-28","purchasePrice":null},{"id":109,"status":"In Cellar","type":"White","varietal":"Sauvignon Blanc","producer":"Piazza Del Dotto","vintage":"2023","region":"Napa Valley","appellation":"Rutherford","location":"NA","dateAdded":"2026-05-29","purchasePrice":null},{"id":110,"status":"In Cellar","type":"Red","varietal":"Old Vines Zinfandel","producer":"St Francis - Tres Viejos","vintage":"2023","region":"Sonoma County","appellation":"","location":"NA","dateAdded":"2026-05-28","purchasePrice":null},{"id":111,"status":"In Cellar","type":"Red","varietal":"Pinot Noir","producer":"St Francis - Rio Este Vineyard","vintage":"2023","region":"Sonoma County","appellation":"","location":"NA","dateAdded":"2026-05-28","purchasePrice":null},{"id":112,"status":"In Cellar","type":"Red","varietal":"Old Vines Zinfandel","producer":"St Francis - Tres Viejos","vintage":"2022","region":"Sonoma County","appellation":"","location":"NA","dateAdded":"2026-05-28","purchasePrice":null},{"id":113,"status":"In Cellar","type":"Red","varietal":"Merlot","producer":"St Francis","vintage":"2023","region":"Sonoma Valley","appellation":"","location":"NA","dateAdded":"2026-05-28","purchasePrice":null},{"id":114,"status":"In Cellar","type":"White","varietal":"Chardonnay - Wild Oak Vineyard","producer":"St Francis","vintage":"2024","region":"Sonoma Valley","appellation":"","location":"NA","dateAdded":"2026-05-28","purchasePrice":null}],"history":[{"action":"Consumed","date":"2026-04-19","notes":"Mark Freeman in town","price":null,"id":8,"varietal":"Tannat","producer":"Allegretto","vintage":"2017"},{"action":"Consumed","date":"2026-04-19","notes":"Mark Freeman in Town","price":null,"id":9,"varietal":"Cabernet Sauvignon","producer":"Allegretto","vintage":"2017"},{"action":"Consumed","date":"2026-04-19","notes":"Mark Freeman in town","price":null,"id":10,"varietal":"Pinot Noir","producer":"Chateau St Jean","vintage":"2018"},{"action":"Gifted","date":"2026-06-05","notes":"Eric Edwards/Its a yacht bitch!","price":null,"id":68,"varietal":"Blend","producer":"Rapp Ranch - Cutters Reserve","vintage":"2019"},{"action":"Gifted","date":"2026-06-05","notes":"Eric Edwards / it\u2019s a yacht, bitch!","price":null,"id":69,"varietal":"Blend","producer":"Rapp Ranch - Cutters Reserve","vintage":"2019"}]};
+
+// ── BOOT ──────────────────────────────────────────────────────────────────────
+async function initApp() {
+  await openIDB();
+  const saved = await idbGet('db');
+  if (saved) { DB = saved; }
+  else { DB = SEED; await idbSet('db', DB); }
+  checkMobile();
+  renderCellar();
+  initInstallPrompt();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+function checkMobile() {
+  isMobile = window.innerWidth < 640;
+  document.getElementById('tableView').style.display = isMobile ? 'none' : '';
+  document.getElementById('cardView' ).style.display = isMobile ? ''     : 'none';
+  window.addEventListener('resize', () => {
+    const m = window.innerWidth < 640;
+    if (m !== isMobile) { isMobile = m; renderCellar(); }
+  }, { passive: true });
+}
+
+// ── INSTALL PROMPT (Android Chrome) ──────────────────────────────────────────
+let deferredPrompt;
+function initInstallPrompt() {
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault(); deferredPrompt = e;
+    if (!localStorage.getItem('installDismissed')) {
+      document.getElementById('installBanner').classList.add('show');
+    }
+  });
+  document.getElementById('installBtn').onclick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    document.getElementById('installBanner').classList.remove('show');
+  };
+}
+function dismissInstall() {
+  localStorage.setItem('installDismissed', '1');
+  document.getElementById('installBanner').classList.remove('show');
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.getElementById('view-cellar' ).style.display = tab==='cellar'  ? '' : 'none';
+  document.getElementById('view-history').style.display = tab==='history' ? '' : 'none';
+  document.getElementById('tab-cellar' ).classList.toggle('active', tab==='cellar');
+  document.getElementById('tab-history').classList.toggle('active', tab==='history');
+  if (tab==='history') renderHistory();
+}
+
+// ── GROUP ─────────────────────────────────────────────────────────────────────
+function groupBottles(bottles) {
+  const map = {};
+  bottles.filter(b => b.status==='In Cellar').forEach(b => {
+    const k = `${b.type}|${b.varietal}|${b.producer}|${b.region}|${b.appellation}|${b.vintage}`;
+    if (!map[k]) {
+      map[k] = { key:k, qty:1, ids:[b.id], id:b.id,
+        type:b.type, varietal:b.varietal, producer:b.producer,
+        region:b.region||'', appellation:b.appellation||'',
+        vintage:b.vintage, status:b.status,
+        locations:new Set([b.location||'']), dateAdded:b.dateAdded };
+    } else {
+      map[k].qty++; map[k].ids.push(b.id); map[k].locations.add(b.location||'');
+      if (b.id < map[k].id) { map[k].id=b.id; map[k].dateAdded=b.dateAdded; }
+    }
+  });
+  return Object.values(map);
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+function renderStats(groups) {
+  const total    = groups.reduce((s,g)=>s+g.qty,0);
+  const reds     = groups.filter(g=>g.type==='Red'  ).reduce((s,g)=>s+g.qty,0);
+  const whites   = groups.filter(g=>g.type==='White').reduce((s,g)=>s+g.qty,0);
+  const others   = total-reds-whites;
+  const consumed = DB.history.filter(h=>h.action==='Consumed').length;
+  document.getElementById('statsBar').innerHTML =
+    pill(total,'Bottles<br>in Cellar') + pill(reds,'Red') + pill(whites,'White') +
+    (others>0  ? pill(others,'Other')          : '') +
+    (consumed>0? pill(consumed,'Bottles<br>Enjoyed') : '');
+}
+function pill(n,l) { return `<div class="stat-pill"><span class="stat-num">${n}</span><span class="stat-label">${l}</span></div>`; }
+
+// ── DROPDOWNS ─────────────────────────────────────────────────────────────────
+function populateDropdowns() {
+  const active = DB.bottles.filter(b=>b.status==='In Cellar');
+  const prods  = [...new Set(active.map(b=>b.producer).filter(Boolean))].sort();
+  const pEl = document.getElementById('prodFilter');
+  const pV  = pEl.value;
+  pEl.innerHTML = '<option value="">All Producers</option>' + prods.map(p=>`<option>${esc(p)}</option>`).join('');
+  if (prods.includes(pV)) pEl.value = pV;
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function renderCellar() {
+  let groups = groupBottles(DB.bottles);
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const typeF  = document.getElementById('typeFilter').value;
+  const prodF  = document.getElementById('prodFilter').value;
+  if (search) groups = groups.filter(g=>`${g.varietal} ${g.producer} ${g.region} ${g.appellation} ${g.vintage} ${[...g.locations].join(' ')}`.toLowerCase().includes(search));
+  if (typeF)  groups = groups.filter(g=>g.type===typeF);
+  if (prodF)  groups = groups.filter(g=>g.producer===prodF);
+  const sort = document.getElementById('sortSelect').value;
+  if      (sort==='vintage')      groups.sort((a,b)=>Number(a.vintage)-Number(b.vintage));
+  else if (sort==='typeVarietal') groups.sort((a,b)=>a.type.localeCompare(b.type)||a.varietal.localeCompare(b.varietal));
+  else if (sort==='producer')     groups.sort((a,b)=>a.producer.localeCompare(b.producer));
+  else                            groups.sort((a,b)=>a.id-b.id);
+
+  renderStats(groupBottles(DB.bottles));
+  populateDropdowns();
+  const total = groups.reduce((s,g)=>s+g.qty,0);
+  document.getElementById('countBadge').textContent = `${total} bottle${total!==1?'s':''}`;
+
+  if (isMobile) renderCards(groups);
+  else          renderTable(groups);
+}
+
+function renderTable(groups) {
+  const tbody = document.getElementById('cellarBody');
+  if (!groups.length) { tbody.innerHTML=emptyRow(10); return; }
+  tbody.innerHTML = groups.map(g => {
+    const locs = [...g.locations].filter(Boolean).join(', ')||'—';
+    const ks = safeKey(g.key);
+    return `<tr onclick="openDetail('${ks}')">
+      <td class="text-center"><span class="qty-slot${g.qty>1?' multi':''}">${g.qty}</span></td>
+      <td class="hide-sm"><span class="type-badge type-${typeCls(g.type)}">${esc(g.type)}</span></td>
+      <td class="td-v">${esc(g.varietal)}</td>
+      <td>${esc(g.producer)}</td>
+      <td class="hide-sm">${esc(g.region)||'—'}</td>
+      <td class="hide-sm">${esc(g.appellation)||'—'}</td>
+      <td class="td-yr">${esc(g.vintage)}</td>
+      <td class="hide-sm">${esc(locs)}</td>
+      <td class="hide-sm"><span class="status-badge">${esc(g.status)}</span></td>
+      <td onclick="event.stopPropagation()"><button class="action-dots" onclick="openCtx(event,'${ks}')">⋯</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderCards(groups) {
+  const el = document.getElementById('cardView');
+  if (!groups.length) { el.innerHTML=`<div class="empty-state"><div class="ei">🔍</div><h3>No bottles found</h3><p>Try adjusting your filters.</p></div>`; return; }
+  el.innerHTML = groups.map(g => {
+    const locs = [...g.locations].filter(Boolean).join(', ')||'';
+    const ks = safeKey(g.key);
+    return `<div class="bottle-card" onclick="openDetail('${ks}')">
+      <div class="bc-left">
+        <span class="qty-slot${g.qty>1?' multi':''}">${g.qty}</span>
+        <span class="type-badge type-${typeCls(g.type)}" style="font-size:0.58rem;padding:2px 6px">${esc(g.type)}</span>
+      </div>
+      <div class="bc-body">
+        <div class="bc-varietal">${esc(g.varietal)}</div>
+        <div class="bc-producer">${esc(g.producer)}</div>
+        <div class="bc-meta">${[g.region,g.appellation].filter(Boolean).join(' · ')||'&nbsp;'}</div>
+      </div>
+      <div class="bc-right">
+        <div class="bc-year">${esc(g.vintage)}</div>
+        ${locs?`<div class="bc-loc">${esc(locs)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function emptyRow(cols) { return `<tr><td colspan="${cols}"><div class="empty-state"><div class="ei">🍷</div><h3>The cellar awaits</h3><p>Tap + Add to record your first bottle.</p></div></td></tr>`; }
+
+// ── HISTORY ───────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const h = [...DB.history].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const el = document.getElementById('historyList');
+  if (!h.length) { el.innerHTML=`<div class="empty-state"><div class="ei">📖</div><h3>No history yet</h3><p>Consumed, gifted, or sold bottles appear here.</p></div>`; return; }
+  const dm = {Consumed:'dc',Gifted:'dg',Sold:'ds',Deleted:'dd'};
+  el.innerHTML = h.map(e=>`
+    <div class="h-entry">
+      <div class="h-dot ${dm[e.action]||'dd'}"></div>
+      <div class="h-body">
+        <div class="h-wine">${esc(e.vintage)} ${esc(e.varietal)} — ${esc(e.producer)}</div>
+        <div class="h-meta">${esc(e.action)}${e.price?' · $'+Number(e.price).toFixed(2):''}</div>
+        ${e.notes?`<div class="h-note">${esc(e.notes)}</div>`:''}
+      </div>
+      <div class="h-date">${fmtDate(e.date)}</div>
+    </div>`).join('');
+}
+function fmtDate(d) { if(!d)return''; return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+
+// ── PANEL ─────────────────────────────────────────────────────────────────────
+function openPanel()  { document.getElementById('pOverlay').classList.add('open'); document.getElementById('sidePanel').classList.add('open'); }
+function closePanel() { document.getElementById('pOverlay').classList.remove('open'); document.getElementById('sidePanel').classList.remove('open'); closeCtxMenu(); }
+function setPH(t,s)   { document.getElementById('pTitle').textContent=t; document.getElementById('pSub').textContent=s||''; }
+
+// ── ADD / EDIT ────────────────────────────────────────────────────────────────
+function openAddPanel() {
+  setPH('Intake New Bottle','Record a bottle in your cellar');
+  document.getElementById('pBody').innerHTML = buildForm({});
+  document.getElementById('pFoot').innerHTML = `<button class="btn-s" onclick="closePanel()">Cancel</button><button class="btn-p" onclick="submitAdd()">Commit to Cellar</button>`;
+  fillAC(); openPanel();
+}
+function openEditPanel(id) {
+  const b = DB.bottles.find(x=>x.id===id); if(!b)return;
+  setPH('Edit Bottle',`${b.vintage} ${b.varietal}`);
+  document.getElementById('pBody').innerHTML = buildForm(b);
+  document.getElementById('pFoot').innerHTML = `<button class="btn-d" onclick="confirmDelete(${id})">Delete</button><button class="btn-s" onclick="closePanel()">Cancel</button><button class="btn-p" onclick="submitEdit(${id})">Save</button>`;
+  fillAC(); openPanel();
+}
+function buildForm(b) {
+  const types=['Red','White','Rosé','Sparkling','Dessert','Other'];
+  const tOpts=types.map(t=>`<option${b.type===t?' selected':''}>${t}</option>`).join('');
+  const today=new Date().toISOString().split('T')[0];
+  return `
+  <div class="f-section">
+    <span class="f-sec-label">Wine Identity</span>
+    <div class="f-row">
+      <div class="f-col"><label class="fl">Type</label><select class="fi" id="f-type">${tOpts}</select></div>
+      <div class="f-col x2"><label class="fl">Varietal / Blend</label><input class="fi" id="f-varietal" list="dl-var" value="${esc(b.varietal||'')}" placeholder="e.g. Cabernet Sauvignon" autocomplete="off"><datalist id="dl-var"></datalist></div>
+    </div>
+    <div class="f-row">
+      <div class="f-col x2"><label class="fl">Producer / Winery</label><input class="fi" id="f-producer" list="dl-prod" value="${esc(b.producer||'')}" placeholder="e.g. Caymus" autocomplete="off"><datalist id="dl-prod"></datalist></div>
+      <div class="f-col"><label class="fl">Vintage</label><input class="fi" id="f-vintage" type="number" value="${esc(b.vintage||'')}" min="1800" max="2099" placeholder="${new Date().getFullYear()-1}"></div>
+    </div>
+  </div>
+  <div class="f-section">
+    <span class="f-sec-label">Geography</span>
+    <div class="geo-box">
+      <p><strong>Country / Region</strong> — Broad origin: e.g. <em>Napa Valley</em>, <em>Paso Robles</em>, <em>Burgundy</em>.</p>
+      <p><strong>Appellation / AVA</strong> — Legal sub-zone: US AVA (e.g. <em>Oakville</em>), French AOC, Italian DOC/DOCG.</p>
+    </div>
+    <div class="f-row">
+      <div class="f-col"><label class="fl">Country / Region</label><input class="fi" id="f-region" list="dl-reg" value="${esc(b.region||'')}" placeholder="e.g. Napa Valley" autocomplete="off"><datalist id="dl-reg"></datalist></div>
+      <div class="f-col"><label class="fl">Appellation / AVA</label><input class="fi" id="f-app" list="dl-app" value="${esc(b.appellation||'')}" placeholder="e.g. Oakville" autocomplete="off"><datalist id="dl-app"></datalist></div>
+    </div>
+  </div>
+  <div class="f-section">
+    <span class="f-sec-label">Acquisition</span>
+    <div class="f-row">
+      <div class="f-col x2"><label class="fl">Cellar Location / Bin</label><input class="fi" id="f-loc" list="dl-loc" value="${esc(b.location||'')}" placeholder="e.g. Rack A, Row 3" autocomplete="off"><datalist id="dl-loc"></datalist></div>
+      <div class="f-col"><label class="fl">Date</label><input class="fi" id="f-date" type="date" value="${b.dateAdded||today}"></div>
+    </div>
+    <div class="f-row">
+      <div class="f-col"><label class="fl">Qty</label><input class="fi" id="f-qty" type="number" value="${b.qty||1}" min="1" max="120"><div class="f-hint">Each bottle tracked separately</div></div>
+      <div class="f-col x2"><label class="fl">Purchase Price (optional)</label><input class="fi" id="f-price" type="number" step="0.01" value="${b.purchasePrice||''}" placeholder="0.00"></div>
+    </div>
+  </div>`;
+}
+function fillAC() {
+  const fill=(id,vals)=>{const dl=document.getElementById(id);if(dl)dl.innerHTML=[...new Set(vals.filter(Boolean))].sort().map(v=>`<option value="${esc(v)}">`).join('');};
+  fill('dl-var',  DB.bottles.map(b=>b.varietal));
+  fill('dl-prod', DB.bottles.map(b=>b.producer));
+  fill('dl-reg',  DB.bottles.map(b=>b.region));
+  fill('dl-app',  DB.bottles.map(b=>b.appellation));
+  fill('dl-loc',  DB.bottles.map(b=>b.location));
+}
+function getVals() {
+  return { type:document.getElementById('f-type').value, varietal:document.getElementById('f-varietal').value.trim(), producer:document.getElementById('f-producer').value.trim(), vintage:document.getElementById('f-vintage').value.trim(), region:document.getElementById('f-region').value.trim(), appellation:document.getElementById('f-app').value.trim(), location:document.getElementById('f-loc').value.trim(), dateAdded:document.getElementById('f-date').value, qty:parseInt(document.getElementById('f-qty').value)||1, purchasePrice:document.getElementById('f-price').value||null };
+}
+async function submitAdd() {
+  const v=getVals();
+  if(!v.varietal||!v.producer||!v.vintage){showToast('Varietal, Producer & Vintage required.');return;}
+  let maxId=DB.bottles.length?Math.max(...DB.bottles.map(b=>b.id)):0;
+  for(let i=0;i<v.qty;i++) DB.bottles.push({id:++maxId,status:'In Cellar',type:v.type,varietal:v.varietal,producer:v.producer,vintage:v.vintage,region:v.region,appellation:v.appellation,location:v.location,dateAdded:v.dateAdded,purchasePrice:v.purchasePrice});
+  await idbSet('db',DB); closePanel(); renderCellar();
+  showToast(`${v.qty} bottle${v.qty>1?'s':''} added.`);
+}
+async function submitEdit(id) {
+  const v=getVals();
+  if(!v.varietal||!v.producer||!v.vintage){showToast('Varietal, Producer & Vintage required.');return;}
+  const idx=DB.bottles.findIndex(b=>b.id===id); if(idx===-1)return;
+  Object.assign(DB.bottles[idx],{type:v.type,varietal:v.varietal,producer:v.producer,vintage:v.vintage,region:v.region,appellation:v.appellation,location:v.location,dateAdded:v.dateAdded,purchasePrice:v.purchasePrice});
+  await idbSet('db',DB); closePanel(); renderCellar();
+  showToast('Bottle updated.');
+}
+
+// ── DETAIL ────────────────────────────────────────────────────────────────────
+function openDetail(key) {
+  const g = groupBottles(DB.bottles).find(x=>x.key===key); if(!g)return;
+  activeKey=key;
+  setPH(g.varietal,`${g.producer} · ${g.vintage}`);
+  const locs=[...g.locations].filter(Boolean).join(', ')||'Unassigned';
+  document.getElementById('pBody').innerHTML=`
+    <div class="d-hero">
+      <div class="d-year">${esc(g.vintage)}</div>
+      <div class="d-var">${esc(g.varietal)}</div>
+      <div class="d-prod">${esc(g.producer)}</div>
+      <div style="margin-top:10px">
+        <span class="type-badge type-${typeCls(g.type)}">${esc(g.type)}</span>
+        &nbsp;
+        <span class="qty-slot multi" style="width:auto;padding:0 10px;border-radius:12px">${g.qty} bottle${g.qty!==1?'s':''}</span>
+      </div>
+    </div>
+    <div class="d-grid">
+      <div class="d-cell"><div class="d-cl">Country / Region</div><div class="d-cv">${esc(g.region)||'—'}</div></div>
+      <div class="d-cell"><div class="d-cl">Appellation / AVA</div><div class="d-cv">${esc(g.appellation)||'—'}</div></div>
+      <div class="d-cell full"><div class="d-cl">Cellar Location</div><div class="d-cv">${esc(locs)}</div></div>
+    </div>
+    <div style="margin-bottom:7px;font-size:0.65rem;color:var(--parch-faint);text-transform:uppercase;letter-spacing:0.1em">Actions — one bottle at a time</div>
+    <div class="d-acts">
+      <button class="d-act" onclick="openActionForm('Consumed')">Consumed</button>
+      <button class="d-act" onclick="openActionForm('Gifted')">Gifted</button>
+      <button class="d-act" onclick="openActionForm('Sold')">Sold</button>
+    </div>
+    <div id="actionArea"></div>`;
+  document.getElementById('pFoot').innerHTML=`<button class="btn-s" onclick="closePanel()">Close</button><button class="btn-p" onclick="openEditPanel(${g.ids[0]})">Edit a Bottle</button>`;
+  openPanel();
+}
+function openActionForm(action) {
+  const today=new Date().toISOString().split('T')[0];
+  const priceF=action==='Sold'?`<div class="f-col"><label class="fl">Sale Price ($)</label><input class="fi" id="a-price" type="number" step="0.01" placeholder="0.00"></div>`:'';
+  const lbl=action==='Consumed'?'Occasion / Notes':action==='Gifted'?'To Whom / Reason':'Buyer / Notes';
+  document.getElementById('actionArea').innerHTML=`
+    <div class="a-confirm">
+      <h4>Mark as ${action}</h4>
+      <div class="f-row"><div class="f-col"><label class="fl">Date</label><input class="fi" id="a-date" type="date" value="${today}"></div>${priceF}</div>
+      <div style="margin-bottom:11px"><label class="fl">${lbl}</label><textarea class="fi" id="a-notes" placeholder="Optional…"></textarea></div>
+      <button class="btn-p" style="width:100%" onclick="submitAction('${action}')">Confirm — Mark as ${action}</button>
+    </div>`;
+}
+async function submitAction(action) {
+  const g=groupBottles(DB.bottles).find(x=>x.key===activeKey); if(!g||!g.ids.length)return;
+  const b=DB.bottles.find(x=>x.id===g.ids[0]); if(!b)return;
+  const date=document.getElementById('a-date').value;
+  const notes=document.getElementById('a-notes').value.trim();
+  const prEl=document.getElementById('a-price');
+  const price=prEl?prEl.value:null;
+  b.status=action; b.actionDate=date; b.notes=notes;
+  if(price) b.salePrice=price;
+  DB.history.push({action,date,notes,price:price||null,id:b.id,varietal:b.varietal,producer:b.producer,vintage:b.vintage});
+  await idbSet('db',DB); closePanel(); renderCellar();
+  showToast(`Bottle marked as ${action}.`);
+}
+
+// ── CONTEXT MENU ──────────────────────────────────────────────────────────────
+let ctxKey=null;
+function openCtx(e,key) {
+  e.preventDefault(); ctxKey=key;
+  const g=groupBottles(DB.bottles).find(x=>x.key===key); if(!g)return;
+  const ks=safeKey(key);
+  const m=document.getElementById('ctxMenu');
+  m.innerHTML=`
+    <button class="ctx-i" onclick="openDetail('${ks}');closeCtxMenu()">View Details</button>
+    <button class="ctx-i" onclick="openEditPanel(${g.ids[0]});closeCtxMenu()">Edit a Bottle</button>
+    <div class="ctx-div"></div>
+    <button class="ctx-i" onclick="ctxAct('Consumed')">Mark Consumed</button>
+    <button class="ctx-i" onclick="ctxAct('Gifted')">Mark Gifted</button>
+    <button class="ctx-i" onclick="ctxAct('Sold')">Mark Sold</button>
+    <div class="ctx-div"></div>
+    <button class="ctx-i danger" onclick="ctxDel()">Delete Record</button>`;
+  const r=e.currentTarget.getBoundingClientRect();
+  m.style.top=(r.bottom+4)+'px';
+  m.style.left=Math.min(r.left,window.innerWidth-180)+'px';
+  m.classList.add('open');
+}
+async function ctxAct(action) {
+  closeCtxMenu();
+  const g=groupBottles(DB.bottles).find(x=>x.key===ctxKey); if(!g)return;
+  const b=DB.bottles.find(x=>x.id===g.ids[0]); if(!b)return;
+  const today=new Date().toISOString().split('T')[0];
+  b.status=action; b.actionDate=today;
+  DB.history.push({action,date:today,notes:'',price:null,id:b.id,varietal:b.varietal,producer:b.producer,vintage:b.vintage});
+  await idbSet('db',DB); renderCellar(); showToast(`Bottle marked as ${action}.`);
+}
+async function ctxDel() {
+  closeCtxMenu();
+  const g=groupBottles(DB.bottles).find(x=>x.key===ctxKey); if(!g)return;
+  if(!confirm(`Delete 1 bottle of ${g.vintage} ${g.varietal}?`))return;
+  const idx=DB.bottles.findIndex(x=>x.id===g.ids[0]); if(idx===-1)return;
+  const b=DB.bottles[idx];
+  DB.history.push({action:'Deleted',date:new Date().toISOString().split('T')[0],notes:'',price:null,id:b.id,varietal:b.varietal,producer:b.producer,vintage:b.vintage});
+  DB.bottles.splice(idx,1);
+  await idbSet('db',DB); renderCellar(); showToast('Bottle deleted.');
+}
+async function confirmDelete(id) {
+  const b=DB.bottles.find(x=>x.id===id);
+  if(!b||!confirm(`Delete this bottle?\n${b.vintage} ${b.varietal} — ${b.producer}`))return;
+  DB.history.push({action:'Deleted',date:new Date().toISOString().split('T')[0],notes:'',price:null,id:b.id,varietal:b.varietal,producer:b.producer,vintage:b.vintage});
+  DB.bottles=DB.bottles.filter(x=>x.id!==id);
+  await idbSet('db',DB); closePanel(); renderCellar(); showToast('Bottle deleted.');
+}
+function closeCtxMenu(){document.getElementById('ctxMenu').classList.remove('open');}
+document.addEventListener('click',e=>{if(!e.target.closest('.ctx')&&!e.target.closest('.action-dots'))closeCtxMenu();});
+
+// ── EXPORT / IMPORT ───────────────────────────────────────────────────────────
+function doExport() {
+  const blob = new Blob([JSON.stringify(DB, null, 2)], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10);
+  a.href = url; a.download = `cellar-backup-${date}.json`;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url); a.remove();}, 1000);
+  showToast('JSON exported — save it to iCloud Drive or Google Drive.');
+}
+function doExportCSV() {
+  const hdrs = ['ID','Status','Type','Varietal','Producer','Vintage','Country/Region','Appellation/AVA','Location','Date Added','Purchase Price','Action Date','Notes'];
+  const rows = DB.bottles.map(b=>[b.id,b.status,b.type,b.varietal,b.producer,b.vintage,b.region||'',b.appellation||'',b.location||'',b.dateAdded||'',b.purchasePrice||'',b.actionDate||'',b.notes||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const blob = new Blob([[hdrs.join(','),...rows].join('\n')],{type:'text/csv'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`cellar-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); setTimeout(()=>a.remove(),1000);
+  showToast('CSV exported.');
+}
+function doImport() { document.getElementById('importFile').click(); }
+async function handleImport(e) {
+  const file=e.target.files[0]; if(!file)return;
+  try {
+    const text  = await file.text();
+    const data  = JSON.parse(text);
+    if(!data.bottles) throw new Error('Missing bottles array');
+    DB = data;
+    await idbSet('db',DB);
+    renderCellar(); renderHistory();
+    showToast(`Imported ${DB.bottles.length} bottle records.`);
+  } catch(err) { showToast('Import failed: ' + err.message); }
+  e.target.value='';
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function safeKey(k){return k.replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+function typeCls(t){return t.replace(/[éè]/g,'e').replace(/\s/g,'_');}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+initApp();
+</script>
+</body>
+</html>
