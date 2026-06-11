@@ -1,6 +1,6 @@
 {
-  "name": "The Cellar Book",
-  "short_name": "Cellar Book",
+  "name": "Noli& Julia Cellar",
+  "short_name": "N & J Cellar",
   "description": "A private wine cellar inventory",
   "start_url": "./index.html",
   "display": "standalone",
